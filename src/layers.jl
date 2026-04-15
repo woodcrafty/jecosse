@@ -1,4 +1,4 @@
-# This file contains types and functions related to dealing with layers
+# This file contains types and functions for handling layers
 
 """
 - z1: Distance from the surface to the top of each layer [cm]
@@ -53,7 +53,51 @@ function index_from_depth(lyrs::Layers, depth)
     return nothing
 end
 
+"""
+Return the extent of overlap between two layers, a and b.
+
+Both layers should be in the same units. If there is no overlap between
+the layers, 0 is returned.
+
+Arguments:
+- az1: Distance from the surface to the top of layer a
+- az2: Distance from the surface to the top of layer a
+- bz1: Distance from the surface to the top of layer b
+- bz2: Distance from the surface to the top of layer b
+"""
+function overlap(az1, az2, bz1, bz2)
+    adz = az2 - az1         # Depth thickness of layer a
+    bdz = bz2 - bz1         # Depth thickness of layer b
+
+    # No overlap between layers
+    if az1 >= bz2 || az2 <= bz1
+        return 0
+    # Top of a lies within b and...
+    elseif bz1 <= az1 && az1 < bz2
+        #...bottom of a is within b, so a lies completely within b
+        if az2 <= bz2
+            return adz
+        #...bottom of a lies below bottom of b
+        else
+            return bz2 - az1
+        end
+    # Top of a lies above b and...
+    else
+        #...bottom of a lies inside of b
+        if bz1 < az2 && az2 <= bz2
+            return az2 - bz1
+        #...bottom of a lies below bottom of b so b is completely
+        # contained by within above
+        elseif az2 > bz2
+            return bdz
+        end
+    end
+    error("invalid logic in overlap()")  # Should never reach this line
+end
+
 #lyrs = Layers([5.0, 5.0, 10.0, 10.0])
 lyrs = Layers([5, 5, 10, 10])
 println(lyrs)
 println(index_from_depth(lyrs, 12))
+println(overlap(lyrs.z1[2], lyrs.z2[2], 5, 7))
+overlap.(lyrs.z1, lyrs.z2, 5, 7)
