@@ -95,22 +95,72 @@ function overlap(az1, az2, bz1, bz2)
     error("invalid logic in overlap()")  # Should never reach this line
 end
 
-function transcribe_intensive_values(source_values, source_layers::Layers, destination_layers::Layers)
-    length(source_values) == length(source_layers.z1) || error("source_values and source_layers arrays should be the same length")
-    new_values = zeros(Float64, length(destination_layers.z1))
+"""
+Remap intensive values from one layer scheme to another.
+
+Use this function to remap intensive layer quantities such as pH, bulk density,
+water holding capacites and percentages to a different layer scheme. intensive
+quantities are those whose magnitude does not depend on the size of the layer.
+
+Note that source_layers and destination_layers should be in the same units.
+
+Arguments:
+- source_values: array of intensive values to be remapped. The array should be the same length as the
+    arrays contained in source_layers.
+- source_layers - Layers struct describing the source layer scheme
+- destination_layers - Layers struct describing the desitnation layer scheme
+"""
+function remap_intensive_values(source_values, source_layers::Layers, destination_layers::Layers)
+    _array_matches_layers(source_values, source_layers) || error("source_values and source_layers arrays should be the same length")
+    remapped = zeros(Float64, length(destination_layers.z1))
     for i = 1:length(destination_layers.z1)
-        overlaps = overlap.(source_layers.z1, source_layers.z1, destination_layers.z1[i], destination_layers.z2[i])
+        overlaps = overlap.(source_layers.z1, source_layers.z2, destination_layers.z1[i], destination_layers.z2[i])
         total_overlap = sum(overlaps)
         if total_overlap > 0
-            new_values[i] = sum([sv * ol / total_overlap for (sv, ol) in zip(source_value, overlaps)])
+            remapped[i] = sum([sv * ol / total_overlap for (sv, ol) in zip(source_values, overlaps)])
         else
-            new_values[i] = 0
+            remapped[i] = 0
         end
     end
-    return new_values
+    return remapped
 end
 
-#lyrs = Layers([5.0, 5.0, 10.0, 10.0])
-water_layers = Layers([10, 20])
+"""
+Remap extensive values from one layer scheme to another layer scheme.
+
+Use this function to remap extensive layer quantities (e.g. soil carbon
+content), to a different layer scheme. Extensive qunatities are additive over
+multiple layers (i.e. their magnitude depends on the size of the layer
+of which they are a property). 
+
+Note that source_layers and destination_layers should be in the same units.
+
+Arguments:
+- source_values: array of extensive values to be remapped. The array should be the same length as the
+    arrays contained in source_layers.
+- source_layers - Layers struct describing the source layer scheme
+- destination_layers - Layers struct describing the desitnation layer scheme
+"""
+function remap_extensive_values(source_values, source_layers::Layers, destination_layers::Layers)
+    _array_matches_layers(source_values, source_layers) || error("source_values and source_layers arrays should be the same length")   
+    remapped = zeros(Float64, length(destination_layers.z1))
+    for i = 1:length(destination_layers.z1)
+        overlaps = overlap.(source_layers.z1, source_layers.z2, destination_layers.z1[i], destination_layers.z2[i])
+        remapped[i] = sum([sv * ol / sldz for (sv, ol, sldz) in zip(source_values, overlaps, source_layers.dz)])
+    end
+    return remapped
+end
+
+
+function _array_matches_layers(a, layers::Layers)
+    return length(a) == length(layers.z1)
+end
+
+println("Remapping...")
+#lyrs = Layers([5, 5, 10, 10])
+water_layers = Layers([30])
 om_layers = Layers([5, 5, 10, 10])
-transcribe_intensive_values([5, 10], water_layers, om_layers)
+#overlap.(wlyrs.z1, wlyrs.z1, destination_layers.z1[i], destination_layers.z2[i])
+println(remap_intensive_values([100], water_layers, om_layers))
+println(remap_extensive_values([100], water_layers, om_layers))
+println("Done.")
