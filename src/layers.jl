@@ -66,8 +66,8 @@ Arguments:
 - bz2: Distance from the surface to the top of layer b
 """
 function overlap(az1, az2, bz1, bz2)
-    adz = az2 - az1         # Depth thickness of layer a
-    bdz = bz2 - bz1         # Depth thickness of layer b
+    adz = az2 - az1         # Depth (thickness) of layer a
+    bdz = bz2 - bz1         # Depth (thickness) of layer b
 
     # No overlap between layers
     if az1 >= bz2 || az2 <= bz1
@@ -95,9 +95,22 @@ function overlap(az1, az2, bz1, bz2)
     error("invalid logic in overlap()")  # Should never reach this line
 end
 
+function transcribe_intensive_values(source_values, source_layers::Layers, destination_layers::Layers)
+    length(source_values) == length(source_layers.z1) || error("source_values and source_layers arrays should be the same length")
+    new_values = zeros(Float64, length(destination_layers.z1))
+    for i = 1:length(destination_layers.z1)
+        overlaps = overlap.(source_layers.z1, source_layers.z1, destination_layers.z1[i], destination_layers.z2[i])
+        total_overlap = sum(overlaps)
+        if total_overlap > 0
+            new_values[i] = sum([sv * ol / total_overlap for (sv, ol) in zip(source_value, overlaps)])
+        else
+            new_values[i] = 0
+        end
+    end
+    return new_values
+end
+
 #lyrs = Layers([5.0, 5.0, 10.0, 10.0])
-lyrs = Layers([5, 5, 10, 10])
-println(lyrs)
-println(index_from_depth(lyrs, 12))
-println(overlap(lyrs.z1[2], lyrs.z2[2], 5, 7))
-overlap.(lyrs.z1, lyrs.z2, 5, 7)
+water_layers = Layers([10, 20])
+om_layers = Layers([5, 5, 10, 10])
+transcribe_intensive_values([5, 10], water_layers, om_layers)
