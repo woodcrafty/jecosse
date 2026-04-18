@@ -29,7 +29,7 @@ struct LayerScheme
                 ---- 20 cm
     """
     function LayerScheme(dz_layers)
-        any(dz_layers .<= 0) && error("dz_layer must contain only positive numbers")
+        any(dz_layers .<= 0) && thow(ArgumentError("dz_layer must only contain positive numbers"))
         z1 = [i == 1 ? 0 : sum(dz_layers[1:i-1]) for i=1:length(dz_layers)]
         z2 = [z + dz for (z, dz) in zip(z1, dz_layers)]
         zmid = (z1 + z2) / 2
@@ -104,7 +104,7 @@ function overlap(az1, az2, bz1, bz2)
             return bdz
         end
     end
-    error("invalid logic in overlap()")  # Should never reach this line
+    @assert(false, "invalid logic in overlap()")  # Should never reach this line
 end
 
 """
@@ -172,21 +172,21 @@ function _array_matches_layers(a, layers::LayerScheme)
     return length(a) == length(layers.z1)
 end
 
-println("Remapping...")
-#lyrs = Layers([5, 5, 10, 10])
-source_layers = LayerScheme(fill(5.0, 60))
-source_values = fill(3.0, 60)
-source_values[1] = 1.5
-dest_layers = LayerScheme([40.0])
-#overlap.(wlyrs.z1, wlyrs.z1, destination_layers.z1[i], destination_layers.z2[i])
-println("Remapping intensive...")
-@time remap_intensive_values(source_values, source_layers, dest_layers)
-println(remap_intensive_values(source_values, source_layers, dest_layers))
-@time remap_intensive_values(source_values, source_layers, dest_layers)
-println("Remapping extensive...")
-@time remap_extensive_values(source_values, source_layers, dest_layers)
-println(remap_extensive_values(source_values, source_layers, dest_layers))
-@time remap_extensive_values(source_values, source_layers, dest_layers)
-println("Done.")
+# println("Remapping...")
+# #lyrs = Layers([5, 5, 10, 10])
+# source_layers = LayerScheme(fill(5.0, 60))
+# source_values = fill(3.0, 60)
+# source_values[1] = 1.5
+# dest_layers = LayerScheme([40.0])
+# #overlap.(wlyrs.z1, wlyrs.z1, destination_layers.z1[i], destination_layers.z2[i])
+# println("Remapping intensive...")
+# @time remap_intensive_values(source_values, source_layers, dest_layers)
+# println(remap_intensive_values(source_values, source_layers, dest_layers))
+# @time remap_intensive_values(source_values, source_layers, dest_layers)
+# println("Remapping extensive...")
+# @time remap_extensive_values(source_values, source_layers, dest_layers)
+# println(remap_extensive_values(source_values, source_layers, dest_layers))
+# @time remap_extensive_values(source_values, source_layers, dest_layers)
+# println("Done.")
 
 end

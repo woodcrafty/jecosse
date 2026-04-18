@@ -29,8 +29,8 @@ struct LayerScheme
         layer 3
                 ---- 20 cm
     """
-    function LayerScheme(dz_layers)
-        any(dz_layers .<= 0) && error("dz_layer must contain only positive numbers")
+    function LayerScheme(dz_layers::Vector{Float64})
+        all(dz_layers .> 0) || throw(DomainError(dz_layers, "dz_layer must only contain positive numbers"))
         nlayers = length(dz_layers)
         z1 = [i == 1 ? 0 : sum(dz_layers[1:i-1]) for i=1:length(dz_layers)]
         z2 = [z + dz for (z, dz) in zip(z1, dz_layers)]
@@ -45,12 +45,11 @@ Return the index of the layer corresponding to a depth.
 
 If the depth does not correspond to any of the layers, the function returns nothing.
 """
-function index_from_depth(lyrs::LayerScheme, depth)
-    for i = 1:length(lyrs.z1)
-        if depth >= lyrs.z1[i] && depth < lyrs.z2[i]
-            return i
-        end
-        if depth == lyrs.z2[i]
+function index_from_depth(layers::LayerScheme, depth)
+    depth >= 0 || throw(DomainError(depth, "depth must be ≥ 0"))
+    depth > layers.z2[end] && throw(DomainError(depth, "depth must be ≤ the maximum depth of the column"))
+    for i = 1:layers.nlayers
+        if depth >= layers.z1[i] && depth <= layers.z2[i]
             return i
         end
     end
@@ -174,21 +173,23 @@ function _array_matches_layers(a, layers::LayerScheme)
     return length(a) == length(layers.z1)
 end
 
-println("Remapping...")
-#lyrs = Layers([5, 5, 10, 10])
-source_layers = LayerScheme(fill(5.0, 60))
-source_values = fill(3.0, 60)
-source_values[1] = 1.5
-dest_layers = LayerScheme([20, 20])
-#overlap.(wlyrs.z1, wlyrs.z1, destination_layers.z1[i], destination_layers.z2[i])
-println("Remapping intensive...")
-@time remap_intensive_values(source_values, source_layers, dest_layers)
-println(remap_intensive_values(source_values, source_layers, dest_layers))
-@time remap_intensive_values(source_values, source_layers, dest_layers)
-println("Remapping extensive...")
-@time remap_extensive_values(source_values, source_layers, dest_layers)
-println(remap_extensive_values(source_values, source_layers, dest_layers))
-@time remap_extensive_values(source_values, source_layers, dest_layers)
-println("Done.")
+# println("Remapping...")
+# #lyrs = Layers([5, 5, 10, 10])
+# source_layers = LayerScheme([5, -5, 5])
+# println(source_layers.z1)
+# source_layers = LayerScheme(fill(5.0, 60))
+# source_values = fill(3.0, 60)
+# source_values[1] = 1.5
+# dest_layers = LayerScheme([20, 20])
+# #overlap.(wlyrs.z1, wlyrs.z1, destination_layers.z1[i], destination_layers.z2[i])
+# println("Remapping intensive...")
+# @time remap_intensive_values(source_values, source_layers, dest_layers)
+# println(remap_intensive_values(source_values, source_layers, dest_layers))
+# @time remap_intensive_values(source_values, source_layers, dest_layers)
+# println("Remapping extensive...")
+# @time remap_extensive_values(source_values, source_layers, dest_layers)
+# println(remap_extensive_values(source_values, source_layers, dest_layers))
+# @time remap_extensive_values(source_values, source_layers, dest_layers)
+# println("Done.")
 
 end
