@@ -12,12 +12,9 @@ function default_layers()
     return Layers.LayerScheme([5.0, 5.0, 10.0])
 end
 
-@testset "Layers" begin
-    l = default_layers()
-
+function test_layers()
     # Basic Construction tests
-    @testset "Construction" begin
-        
+    @testset "Construction" begin   
         @testset "Valid layers build" begin
             @test l.nlayers == 3
             @test l.z1[1] == 0.0
@@ -35,7 +32,6 @@ end
             @test l.zmid[3] == 15.0
             @test l.dz[3] == 10.0
         end
-
         @testset "Reject non-positive layer depths" begin           
             @test_throws DomainError Layers.LayerScheme([0.0, 5.0, 10.0])
             @test_throws DomainError Layers.LayerScheme([5.0, 5.0, 0.0])
@@ -51,11 +47,9 @@ end
             @test Layers.index_from_depth(l, 10.0) == 2
             @test Layers.index_from_depth(l, 20) == 3
         end
-
         @testset "Reject non-positive layer depths" begin           
             @test_throws DomainError Layers.index_from_depth(l, -1)
             @test_throws DomainError Layers.index_from_depth(l, 20.001)
         end
     end
-
 end
